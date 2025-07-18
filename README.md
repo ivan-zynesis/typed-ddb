@@ -34,6 +34,16 @@ yarn add dynamoose@4.0.4
 pnpm add dynamoose@4.0.4
 ```
 
+📡 **Trigger System**: The trigger system uses **@preact/signals** for reactive programming. This is automatically installed as a dependency, but if you want to use signals directly in your application:
+
+```bash
+npm install @preact/signals
+# or
+yarn add @preact/signals
+# or  
+pnpm add @preact/signals
+```
+
 ## Quick Start
 
 ### 0. Initialize Dynamoose Connection
@@ -271,6 +281,228 @@ await repo.update({
   CreatedAt: originalUser.CreatedAt
 });
 ```
+
+## Trigger System (Event-Driven Architecture)
+
+This library includes a powerful signal-based trigger system that enables event-driven architecture patterns. Triggers allow you to react to entity changes (create, update, delete) without coupling business logic to your data models.
+
+### Key Features
+
+- **Clean Separation**: Entities stay pure, business logic stays in services
+- **Signal-Based**: Uses @preact/signals for reactive programming
+- **Frontend Integration**: Perfect for React useSyncExternalStore patterns
+- **Type-Safe**: Full TypeScript support with strong typing
+- **No Cyclic Dependencies**: Avoids architectural issues
+
+### Basic Usage
+
+#### 1. Mark Entity for Change Publishing
+
+```typescript
+import { Table, PartitionKey, Attribute, PublishChanges } from '@ivan-lee/typed-ddb';
+
+@Table('Users')
+@PublishChanges()  // Enable change publishing
+class User {
+  @PartitionKey()
+  @Attribute({ type: 'string' })
+  id: string;
+
+  @Attribute({ type: 'string' })
+  email: string;
+
+  @Attribute({ type: 'string' })
+  name: string;
+
+  @Attribute({ type: 'date' })
+  CreatedAt: Date;
+}
+```
+
+#### 2. Subscribe to Changes in Service Layer
+
+```typescript
+import { SubscribeToChanges, SubscriptionManager, EntityChangeEvent } from '@ivan-lee/typed-ddb';
+
+class UserService {
+  constructor() {
+    // Initialize subscriptions
+    SubscriptionManager.initialize(this);
+  }
+
+  @SubscribeToChanges(User, 'create')
+  async onUserCreated(event: EntityChangeEvent<User>) {
+    console.log('User created:', event.entity.email);
+    
+    // Send welcome email
+    await this.emailService.sendWelcome(event.entity);
+    
+    // Update analytics
+    await this.analyticsService.trackUserRegistration(event.entity);
+  }
+
+  @SubscribeToChanges(User, 'update')
+  async onUserUpdated(event: EntityChangeEvent<User>) {
+    console.log('User updated:', event.entity.email);
+    console.log('Previous data:', event.previous);
+    
+    // Update search index
+    await this.searchService.updateIndex(event.entity);
+  }
+
+  @SubscribeToChanges(User, 'delete')
+  async onUserDeleted(event: EntityChangeEvent<User>) {
+    console.log('User deleted:', event.previous?.email);
+    
+    // Cleanup user data
+    await this.cleanupUserData(event.previous!);
+  }
+
+  // Subscribe to all events
+  @SubscribeToChanges(User, 'all')
+  async onAnyUserChange(event: EntityChangeEvent<User>) {
+    // Log all changes for audit
+    await this.auditService.logChange(event);
+  }
+}
+```
+
+#### 3. Multiple Service Integration
+
+```typescript
+class AnalyticsService {
+  constructor() {
+    SubscriptionManager.initialize(this);
+  }
+
+  @SubscribeToChanges(User, 'create')
+  async onUserCreated(event: EntityChangeEvent<User>) {
+    await this.trackUserRegistration(event.entity);
+  }
+
+  @SubscribeToChanges(User, 'update')
+  async onUserUpdated(event: EntityChangeEvent<User>) {
+    await this.updateUserAnalytics(event.entity);
+  }
+}
+```
+
+### Advanced Usage Examples
+
+#### Event Sourcing Pattern
+
+```typescript
+class EventSourcingService {
+  private eventStore: any[] = [];
+
+  constructor() {
+    SubscriptionManager.initialize(this);
+  }
+
+  @SubscribeToChanges(User, 'all')
+  async onUserEvent(event: EntityChangeEvent<User>) {
+    // Store event for event sourcing
+    this.eventStore.push({
+      type: `USER_${event.event.toUpperCase()}`,
+      entity: event.entity,
+      previous: event.previous,
+      timestamp: event.timestamp,
+      version: this.eventStore.length + 1
+    });
+  }
+
+  getEventHistory() {
+    return this.eventStore;
+  }
+}
+```
+
+#### Real-time Dashboard Updates
+
+```typescript
+class DashboardService {
+  private userCount = 0;
+
+  constructor() {
+    SubscriptionManager.initialize(this);
+  }
+
+  @SubscribeToChanges(User, 'create')
+  async onUserCreated() {
+    this.userCount++;
+    await this.updateDashboard();
+  }
+
+  @SubscribeToChanges(User, 'delete')
+  async onUserDeleted() {
+    this.userCount--;
+    await this.updateDashboard();
+  }
+
+  private async updateDashboard() {
+    // Update real-time dashboard
+    await this.websocketService.broadcast('user-count', this.userCount);
+  }
+}
+```
+
+#### Conditional Triggers
+
+```typescript
+class NotificationService {
+  constructor() {
+    SubscriptionManager.initialize(this);
+  }
+
+  @SubscribeToChanges(User, 'update')
+  async onUserUpdated(event: EntityChangeEvent<User>) {
+    // Only send notification if email changed
+    if (event.previous?.email !== event.entity.email) {
+      await this.emailService.sendEmailChangeNotification(event.entity);
+    }
+
+    // Only update marketing lists if marketing consent changed
+    if (event.previous?.marketingConsent !== event.entity.marketingConsent) {
+      await this.marketingService.updateConsent(event.entity);
+    }
+  }
+}
+```
+
+### Cleanup and Management
+
+```typescript
+class ApplicationService {
+  private userService: UserService;
+  private notificationService: NotificationService;
+
+  constructor() {
+    this.userService = new UserService();
+    this.notificationService = new NotificationService();
+  }
+
+  async shutdown() {
+    // Cleanup subscriptions
+    SubscriptionManager.cleanupService(this.userService);
+    SubscriptionManager.cleanupService(this.notificationService);
+    
+    // Or cleanup all subscriptions
+    SubscriptionManager.cleanupAll();
+  }
+
+  getSubscriptionStats() {
+    return SubscriptionManager.getStats();
+  }
+}
+```
+
+### Important Limitations
+
+⚠️ **Database-Level Limitation**: Triggers only work when changes are made through this library's Repository class. Direct database operations (AWS CLI, other applications, etc.) will not trigger events.
+
+⚠️ **In-Memory Only**: Signals are in-memory only. For distributed systems, consider using external message queues (SQS, EventBridge) in your trigger handlers.
+
+⚠️ **Error Handling**: Trigger failures do not roll back database operations. Ensure proper error handling in your trigger handlers.
 
 ## Advanced Usage
 
