@@ -1,8 +1,9 @@
-# Source files (only ship built JS/TS declaration files)
+# Source files (exclude source but keep test utilities for users)
 src/
+!src/dynamodb/__test__/
+!src/dynamodb/test-utility/
 
-# Test files
-**/__test__/
+# Test files (exclude test runners but keep test utilities)
 **/*.spec.ts
 **/*.test.ts
 *.spec.js

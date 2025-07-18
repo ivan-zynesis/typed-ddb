@@ -1,4 +1,4 @@
-import { AwsTestContainer, StartedTestContainer } from './DynamoDbEmulator';
+import { AwsTestContainer, StartedTestContainer } from '../test-utility/DynamoDbEmulator';
 import { Repository } from '../core';
 import {
   User,
