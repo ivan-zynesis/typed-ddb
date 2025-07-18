@@ -1,0 +1,58 @@
+# Source files (only ship built JS/TS declaration files)
+src/
+
+# Test files
+**/__test__/
+**/*.spec.ts
+**/*.test.ts
+*.spec.js
+*.test.js
+
+# Development files
+.github/
+.vscode/
+.idea/
+*.log
+*.tgz
+
+# Config files
+tsconfig.json
+tsconfig.build.json
+jest.config.js
+eslint.config.mjs
+.eslintrc*
+.prettierrc*
+codecov.yml
+
+# Documentation (keep README.md and LICENSE)
+CONTRIBUTING.md
+CLAUDE.md
+
+# Git files
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.travis.yml
+.circleci/
+.gitlab-ci.yml
+
+# Package manager
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+.pnpm-debug.log
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Node modules (should be excluded by default, but being explicit)
+node_modules/
