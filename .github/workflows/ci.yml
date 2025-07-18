@@ -49,7 +49,7 @@ jobs:
       run: pnpm run build
 
     - name: Run tests with coverage
-      run: pnpm run test -- --coverage
+      run: pnpm run test -- --coverage --collectCoverageFrom="src/dynamodb/core/Repository.ts"
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
