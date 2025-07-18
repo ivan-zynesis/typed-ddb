@@ -6,6 +6,9 @@ import jest from 'eslint-plugin-jest';
 export default [
   js.configs.recommended,
   {
+    ignores: ['eslint.config.js'],
+  },
+  {
     files: ['**/*.ts'],
     languageOptions: {
       parser: tsParser,
