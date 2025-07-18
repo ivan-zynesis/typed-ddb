@@ -1,5 +1,7 @@
 # typed-ddb
 
+[![codecov](https://codecov.io/gh/ivan-zynesis/typed-ddb/graph/badge.svg)](https://codecov.io/gh/ivan-zynesis/typed-ddb)
+
 A TypeScript library for DynamoDB data modeling with strongly-typed interfaces and decorator-based schema definition.
 
 ## Features
@@ -183,7 +185,7 @@ class Profile {
 
 ## Important Rules
 
-###   Decorator Order
+### ï¿½ Decorator Order
 
 The `@PartitionKey()`, `@SortKey()`, and `@Index()` decorators **MUST** be placed **BEFORE** the `@Attribute()` decorator:
 
@@ -199,7 +201,7 @@ id: string;
 id: string;
 ```
 
-###   Index Usage
+### ï¿½ Index Usage
 
 Only apply `@Index()` to the **partition key** of the secondary index:
 
@@ -214,7 +216,7 @@ status: string;
 publishedAt: number;
 ```
 
-###   Auto-Managed Columns
+### ï¿½ Auto-Managed Columns
 
 The library automatically manages `CreatedAt` and `UpdatedAt` columns:
 
