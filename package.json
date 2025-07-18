@@ -9,6 +9,7 @@
     "test": "jest --detectOpenHandles --runInBand --forceExit"
   },
   "main": "./dist/index.js",
+  "type": "module",
   "private": true,
   "dependencies": {
     "class-transformer": "^0.5.1",
