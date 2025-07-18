@@ -3,6 +3,7 @@ import {InputKey, SortOrder} from 'dynamoose/dist/General';
 import {Query, QueryResponse, Scan, ScanResponse} from 'dynamoose/dist/ItemRetriever';
 export {SortOrder} from 'dynamoose/dist/General';
 import {Prettify} from './util';
+import {SignalTriggerManager} from './signals';
 
 export interface KeyMetadata<T> {
   field: keyof T;
@@ -284,21 +285,49 @@ export class Repository<T, PaginationKey extends string = string> {
     await this.model.create(
       this.transform(item as T, 'serialize'),
     );
-    return this.transform(item as T, 'deserialize');
+    
+    const result = this.transform(item as T, 'deserialize');
+    
+    // Execute create triggers
+    await SignalTriggerManager.executeTriggers(this.ModelClass, 'create', result);
+    
+    return result;
   }
 
   async update(item: Omit<T, 'UpdatedAt'>): Promise<T> {
     const keys: string[] = Reflect.getMetadata('keys', this.ModelClass.prototype) || [];
 
-    if (keys.includes('UpdatedAt')) {
-      // @ts-ignore
-      item['UpdatedAt'] = new Date();
+    // Get the original item for trigger context
+    const partitionKeyMeta = this.getPartitionKeyMeta();
+    const sortKeyMeta = this.getSortKeyMeta();
+
+    const serializer = Reflect.getMetadata('belongsTo', this.ModelClass.prototype, partitionKeyMeta.field as string);
+    const inputKey = { [partitionKeyMeta.field]: serializer ? serializer((item as any)[partitionKeyMeta.field]) : (item as any)[partitionKeyMeta.field] };
+
+    if (sortKeyMeta) {
+      const sortKeySerializer = Reflect.getMetadata('belongsTo', this.ModelClass.prototype, sortKeyMeta.field as string);
+      inputKey[sortKeyMeta.field as string] = sortKeySerializer ? sortKeySerializer((item as any)[sortKeyMeta.field]) : (item as any)[sortKeyMeta.field];
     }
 
+    const previousItem = this.transform(
+      (await this.model.get(inputKey as InputKey)) as T,
+      'deserialize',
+    );
+
+    if (keys.includes('UpdatedAt')) {
+      (item as any)['UpdatedAt'] = new Date();
+    }
+    
     await this.model.update(
       this.transform(item as T, 'serialize'),
     );
-    return this.transform(item as T, 'deserialize');
+    
+    const result = this.transform(item as T, 'deserialize');
+    
+    // Execute update triggers
+    await SignalTriggerManager.executeTriggers(this.ModelClass, 'update', result, previousItem);
+    
+    return result;
   }
 
   async delete<K extends keyof T>(partitionKeyValue: T[K], sortKeyValue?: T[K]) {
@@ -320,7 +349,16 @@ export class Repository<T, PaginationKey extends string = string> {
     if (!toBeDeleted) {
       throw new Error(`Instance ${partitionKeyValue}${sortKeyValue ? '-' + sortKeyValue : ''} is not found for deletion`);
     }
+    
+    // Get the item before deletion for trigger context
+    // Create a copy of the object to avoid modifying the original DynamoDB object
+    const rawCopy = Object.assign({}, toBeDeleted);
+    const previousItem = this.transform(rawCopy as T, 'deserialize');
+    
     await toBeDeleted.delete();
+    
+    // Execute delete triggers with the properly deserialized item
+    await SignalTriggerManager.executeTriggers(this.ModelClass, 'delete', previousItem, previousItem);
   }
 
   async query<K extends keyof T>(partitionKeyValue: T[K], sortKeyCondition?: Condition<T, K>, options?: { index?: string; limit?: number; lastKey?: string; sort?: SortOrder }): Promise<QueryResult<T, PaginationKey>> {

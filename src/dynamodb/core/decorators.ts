@@ -188,3 +188,12 @@ export function BelongsTo<T>(serializer: (t: T) => string, deserializer: (s: str
     }
   };
 }
+
+// Export signal-based trigger system for use in entity definitions and services
+export { 
+  PublishChanges, 
+  SubscribeToChanges, 
+  SubscriptionManager, 
+  EntityChangeEvent,
+  TriggerEvent
+} from './signals';
