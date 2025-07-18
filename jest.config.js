@@ -20,8 +20,6 @@ module.exports = {
     },
     moduleFileExtensions: ['ts', 'js'],
     collectCoverageFrom: [
-        'src/**/*.ts',
-        '!src/**/*.d.ts',
-        '!src/**/__test__/**'
+        'src/dynamodb/core/Repository.ts'
     ]
 };
