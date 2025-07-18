@@ -1,6 +1,6 @@
-# Contributing to typed-ddb
+# Contributing to @ivan-lee/typed-ddb
 
-Thank you for your interest in contributing to typed-ddb! We welcome contributions from the community to help improve this TypeScript library for DynamoDB data modeling.
+Thank you for your interest in contributing to @ivan-lee/typed-ddb! We welcome contributions from the community to help improve this TypeScript library for DynamoDB data modeling.
 
 ## How to Contribute
 
@@ -8,7 +8,7 @@ Thank you for your interest in contributing to typed-ddb! We welcome contributio
 
 If you encounter bugs, have feature requests, or need help with the library:
 
-1. Check existing [issues](https://github.com/yourusername/typed-ddb/issues) to see if it's already reported
+1. Check existing [issues](https://github.com/ivan-zynesis/typed-ddb/issues) to see if it's already reported
 2. Create a new issue with:
    - Clear description of the problem or feature request
    - Steps to reproduce (for bugs)
@@ -30,7 +30,7 @@ We welcome pull requests! Here's how to contribute code:
 
 ```bash
 # Clone your fork
-git clone https://github.com/yourusername/typed-ddb.git
+git clone https://github.com/ivan-zynesis/typed-ddb.git
 cd typed-ddb
 
 # Install dependencies
@@ -190,7 +190,7 @@ If you need help with contributing:
 
 ## License
 
-By contributing to typed-ddb, you agree that your contributions will be licensed under the MIT License.
+By contributing to @ivan-lee/typed-ddb, you agree that your contributions will be licensed under the MIT License.
 
 ## Code of Conduct
 
@@ -198,4 +198,4 @@ Please be respectful and constructive in all interactions. We aim to maintain a 
 
 ---
 
-Thank you for contributing to typed-ddb! Your help makes this library better for everyone.
+Thank you for contributing to @ivan-lee/typed-ddb! Your help makes this library better for everyone.

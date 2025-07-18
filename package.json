@@ -1,5 +1,5 @@
 {
-  "name": "typed-ddb",
+  "name": "@ivan-lee/typed-ddb",
   "version": "0.0.1",
   "description": "A package to hold all helper libraries related for data modeling and transformation",
   "scripts": {

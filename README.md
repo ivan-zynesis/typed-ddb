@@ -17,11 +17,11 @@ A TypeScript library for DynamoDB data modeling with strongly-typed interfaces a
 ## Installation
 
 ```bash
-npm install typed-ddb
+npm install @ivan-lee/typed-ddb
 # or
-yarn add typed-ddb
+yarn add @ivan-lee/typed-ddb
 # or
-pnpm add typed-ddb
+pnpm add @ivan-lee/typed-ddb
 ```
 
 ## Quick Start
@@ -29,7 +29,7 @@ pnpm add typed-ddb
 ### 1. Define Your Entity
 
 ```typescript
-import { Table, PartitionKey, SortKey, Attribute, Index } from 'typed-ddb';
+import { Table, PartitionKey, SortKey, Attribute, Index } from '@ivan-lee/typed-ddb';
 
 @Table('Users')
 class User {
@@ -60,7 +60,7 @@ class User {
 ### 2. Use the Repository
 
 ```typescript
-import { Repository } from 'typed-ddb';
+import { Repository } from '@ivan-lee/typed-ddb';
 
 const userRepo = new Repository(User);
 
@@ -286,7 +286,7 @@ const results = await repo.scan({
 The library includes test utilities for in-memory testing:
 
 ```typescript
-import { InMemoryRepository, InMemoryStorage } from 'typed-ddb/test-utility';
+import { InMemoryRepository, InMemoryStorage } from '@ivan-lee/typed-ddb/test-utility';
 
 // Use in-memory repository for testing
 const repo = new InMemoryRepository(User);
@@ -302,7 +302,7 @@ const repo = new InMemoryRepository(User);
 ### Setup
 
 ```bash
-git clone https://github.com/yourusername/typed-ddb.git
+git clone https://github.com/ivan-zynesis/typed-ddb.git
 cd typed-ddb
 pnpm install
 ```
