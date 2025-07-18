@@ -1,4 +1,4 @@
-import { Table, Attribute, PartitionKey, SortKey, Index, HasOne, HasMany } from '../../core/decorators';
+import { Table, Attribute, PartitionKey, Index, HasOne, HasMany } from '../../core/decorators';
 import { Profile } from './Profile';
 import { Post } from './Post';
 

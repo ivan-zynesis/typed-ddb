@@ -377,7 +377,7 @@ export class Repository<T, PaginationKey extends string = string> {
    * we use dynamoose default behavior
    */
   getDefaultIndexName(type: 'global' | 'local', partitionKey: keyof T, sortKey?: keyof T): string {
-    return `${partitionKey as string}${sortKey ? '-' : ''}${sortKey ? sortKey as string : ''}${type == 'global' ? 'GlobalIndex' : 'LocalIndex'}`;
+    return `${partitionKey as string}${sortKey ? '-' : ''}${sortKey ? sortKey as string : ''}${type === 'global' ? 'GlobalIndex' : 'LocalIndex'}`;
   }
 
   async scan<K extends keyof T>(filters: ScanFilter<T, K>, options?: { index?: string; limit?: number; lastKey?: PaginationKey }): Promise<QueryResult<T, PaginationKey>> {

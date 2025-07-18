@@ -21,5 +21,5 @@ export type Prettify<T> = {
  * The naming is following the default dynamoose@4.0.2 behavior.
  */
 export function constructGSIname(type: 'global' | 'local', hashKey: string, sortKey?: string) {
-  return `${hashKey}${sortKey ? '-' : ''}${sortKey ?? ''}${type == 'global' ? 'GlobalIndex' : 'LocalIndex'}`;
+  return `${hashKey}${sortKey ? '-' : ''}${sortKey ?? ''}${type === 'global' ? 'GlobalIndex' : 'LocalIndex'}`;
 }

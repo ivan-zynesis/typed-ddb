@@ -3,7 +3,6 @@ import { Repository } from '../core';
 import {
   User,
   Post,
-  Comment,
   Profile,
   Tag,
   PostTag
@@ -25,7 +24,7 @@ describe('Demonstration', () => {
     const userId = 'one-to-one-user';
     
     // Create user
-    const user = await userRepo.create({
+    await userRepo.create({
       id: userId,
       email: 'onetoone@example.com',
       name: 'One To One User',
@@ -34,7 +33,7 @@ describe('Demonstration', () => {
     });
 
     // Create profile that belongs to user
-    const profile = await profileRepo.create({
+    await profileRepo.create({
       userId: { id: userId },
       bio: 'This is a one-to-one relationship example',
       avatarUrl: 'https://example.com/avatar.jpg',
@@ -67,7 +66,7 @@ describe('Demonstration', () => {
     const userId = 'one-to-many-user';
     
     // Create user
-    const user = await userRepo.create({
+    await userRepo.create({
       id: userId,
       email: 'onetomany@example.com',
       name: 'One To Many User',
@@ -76,7 +75,7 @@ describe('Demonstration', () => {
     });
 
     // Create multiple posts that belong to user
-    const post1 = await postRepo.create({
+    await postRepo.create({
       userId: { id: userId },
       id: 'post-1',
       title: 'First Post',
@@ -85,7 +84,7 @@ describe('Demonstration', () => {
       publishedAt: Date.now(),
     });
 
-    const post2 = await postRepo.create({
+    await postRepo.create({
       userId: { id: userId },
       id: 'post-2',
       title: 'Second Post',
@@ -151,7 +150,7 @@ describe('Demonstration', () => {
     });
 
     // Create junction table entry (PostTag)
-    const postTag = await postTagRepo.create({
+    await postTagRepo.create({
       postId: { userId: { id: userId }, id: postId },
       tagId: { name: tagName, category: tagCategory },
     });

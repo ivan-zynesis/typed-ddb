@@ -1,7 +1,5 @@
 import {
   GenericContainer, StartedTestContainer,
-  StopOptions,
-  StoppedTestContainer,
 } from 'testcontainers';
 export { StartedTestContainer } from 'testcontainers';
 import * as dynamoose from 'dynamoose';

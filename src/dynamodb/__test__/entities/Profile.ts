@@ -1,4 +1,4 @@
-import { Table, Attribute, PartitionKey, BelongsTo, HasOne } from '../../core/decorators';
+import { Table, Attribute, PartitionKey, BelongsTo } from '../../core/decorators';
 import { User } from './User';
 
 @Table('Profiles')
