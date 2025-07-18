@@ -2,7 +2,7 @@
 
 [![codecov](https://codecov.io/gh/ivan-zynesis/typed-ddb/graph/badge.svg)](https://codecov.io/gh/ivan-zynesis/typed-ddb)
 
-A TypeScript library for DynamoDB data modeling with strongly-typed interfaces and decorator-based schema definition.
+A TypeScript library for DynamoDB data modeling with strongly-typed interfaces and decorator-based schema definition. Built on top of **Dynamoose** for robust DynamoDB operations.
 
 ## Features
 
@@ -24,7 +24,44 @@ yarn add @ivan-lee/typed-ddb
 pnpm add @ivan-lee/typed-ddb
 ```
 
+⚠️ **Important**: This library uses **Dynamoose v4.0.4** under the hood. For compatibility, ensure you install the same version:
+
+```bash
+npm install dynamoose@4.0.4
+# or
+yarn add dynamoose@4.0.4
+# or  
+pnpm add dynamoose@4.0.4
+```
+
 ## Quick Start
+
+### 0. Initialize Dynamoose Connection
+
+**Before using this library**, you must initialize Dynamoose connection. This library relies on Dynamoose's global configuration. Refer to the [Dynamoose documentation](https://dynamoosejs.com/guide/Getting%20Started#configure) for detailed setup instructions.
+
+```typescript
+import * as dynamoose from 'dynamoose';
+
+// For AWS DynamoDB
+dynamoose.aws.configure({
+  accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
+  secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+  region: 'us-east-1'
+});
+
+// For DynamoDB Local
+dynamoose.aws.configure({
+  endpoint: 'http://localhost:8000',
+  region: 'us-east-1'
+});
+
+// Optional: Configure Dynamoose settings
+dynamoose.aws.ddb.set({
+  // Configure DynamoDB options
+  region: 'us-east-1'
+});
+```
 
 ### 1. Define Your Entity
 
