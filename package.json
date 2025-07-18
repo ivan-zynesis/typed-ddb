@@ -1,0 +1,33 @@
+{
+  "name": "typed-ddb",
+  "version": "0.0.1",
+  "description": "A package to hold all helper libraries related for data modeling and transformation",
+  "scripts": {
+    "build": "tsc -b ./tsconfig.build.json --force",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
+    "format": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "test": "jest --detectOpenHandles --runInBand --forceExit"
+  },
+  "main": "./dist/index.js",
+  "private": true,
+  "dependencies": {
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "dynamoose": "^4.0.4"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^24.0.14",
+    "@typescript-eslint/eslint-plugin": "^8.37.0",
+    "@typescript-eslint/parser": "^8.37.0",
+    "eslint": "^9.31.0",
+    "eslint-plugin-jest": "^29.0.1",
+    "eslint-plugin-node": "^11.1.0",
+    "jest": "^29.7.0",
+    "reflect-metadata": "^0.2.2",
+    "testcontainers": "^11.2.1",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.8.3"
+  },
+  "packageManager": "pnpm@9.13.0+sha512.beb9e2a803db336c10c9af682b58ad7181ca0fbd0d4119f2b33d5f2582e96d6c0d93c85b23869295b765170fbdaa92890c0da6ada457415039769edf3c959efe"
+}
