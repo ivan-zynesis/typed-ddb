@@ -9,7 +9,12 @@
     "test": "jest --detectOpenHandles --runInBand --forceExit"
   },
   "main": "./dist/index.js",
+  "types": "dist/index.d.ts",
   "private": true,
+  "keywords": ["dynamodb", "nosql", "typeorm", "typescript", "orm", "aws"],
+  "repository": "https://github.com/ivan-zynesis/typed-ddb",
+  "author": "ivan-zynesis",
+  "license": "MIT",
   "dependencies": {
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
