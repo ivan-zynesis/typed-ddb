@@ -1,5 +1,12 @@
 import { signal, Signal, effect } from '@preact/signals';
 
+// Type augmentation for Symbol.dispose to fix downstream compatibility
+declare global {
+  interface SymbolConstructor {
+    readonly dispose: unique symbol;
+  }
+}
+
 export type TriggerEvent = 'create' | 'update' | 'delete';
 
 export interface EntityChangeEvent<T> {
