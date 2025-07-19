@@ -1,6 +1,7 @@
 # typed-ddb
 
 [![codecov](https://codecov.io/gh/ivan-zynesis/typed-ddb/graph/badge.svg)](https://codecov.io/gh/ivan-zynesis/typed-ddb)
+[![Known Vulnerabilities](https://snyk.io/test/github/ivan-zynesis/typed-ddb/badge.svg)](https://snyk.io/test/github/ivan-zynesis/typed-ddb)
 
 A TypeScript library for DynamoDB data modeling with strongly-typed interfaces and decorator-based schema definition. Built on top of **Dynamoose** for robust DynamoDB operations.
 
