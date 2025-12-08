@@ -14,6 +14,11 @@ export class AmplifyTypeMapper {
     // Get base type
     const baseType = this.getBaseType(type, enums);
 
+    // Enum fields are always mandatory in GraphQL, don't add .required()
+    if (type === 'enums') {
+      return baseType;
+    }
+
     // Apply required/optional modifier
     return this.applyOptionalModifier(baseType, optional);
   }
