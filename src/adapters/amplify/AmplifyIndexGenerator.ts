@@ -13,9 +13,9 @@ export class AmplifyIndexGenerator {
 
     let indexDef: string;
     if (index.sortKeyField) {
-      indexDef = `index('${index.indexName}').sortKeys(['${index.sortKeyField}']).name('${index.indexName}').queryField('${queryField}')`;
+      indexDef = `index('${index.fieldName}').sortKeys(['${index.sortKeyField}']).name('${index.indexName}').queryField('${queryField}')`;
     } else {
-      indexDef = `index('${index.indexName}').name('${index.indexName}').queryField('${queryField}')`;
+      indexDef = `index('${index.fieldName}').name('${index.indexName}').queryField('${queryField}')`;
     }
 
     return indexDef;

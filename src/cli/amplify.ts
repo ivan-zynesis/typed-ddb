@@ -99,13 +99,25 @@ function generateMaterialFile(entityName: string, EntityClass: new () => any): s
     fieldsObject[name.trim()] = type;
   }
 
-  return `/**
+  // Format modelFields with proper indentation
+  const modelFieldsJson = JSON.stringify(fieldsObject, null, 2)
+    .replace(/"([^"]+)":/g, '$1:')
+    .replace(/"/g, '');
+
+  // Add proper indentation (2 spaces) to each line except the first
+  const modelFieldsIndented = modelFieldsJson
+    .split('\n')
+    .map((line, index) => index === 0 ? line : `  ${line}`)
+    .join('\n');
+
+  return `import { a } from '@aws-amplify/backend';
+
+/**
  * Auto-generated Amplify Gen 2 material for ${entityName}
  * Generated from entity class definitions
  *
  * Usage:
  * import { ${entityName}Material } from './path/to/this/file';
- * import { a } from '@aws-amplify/backend';
  *
  * export const ${entityName} = a
  *   .model(${entityName}Material.modelFields)
@@ -116,9 +128,7 @@ function generateMaterialFile(entityName: string, EntityClass: new () => any): s
  */
 
 export const ${entityName}Material = {
-  modelFields: ${JSON.stringify(fieldsObject, null, 2)
-    .replace(/"([^"]+)":/g, '$1:')
-    .replace(/"/g, '')},
+  modelFields: ${modelFieldsIndented},
   secondaryIndexes: ${secondaryIndexes.length > 0
     ? `(index: any) => [\n    ${secondaryIndexes.map(idx => `index.${idx}`).join(',\n    ')}\n  ]`
     : '() => []'}

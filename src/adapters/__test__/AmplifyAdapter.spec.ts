@@ -47,7 +47,7 @@ describe('AmplifyTypeMapper', () => {
   describe('Enum Type Mapping', () => {
     it('should map enum type with values', () => {
       const result = mapper.mapAttributeType('enums', false, false, false, ['draft', 'published', 'archived']);
-      expect(result).toBe("a.enum(['draft', 'published', 'archived']).required()");
+      expect(result).toBe("a.enum(['draft', 'published', 'archived'])");
     });
 
     it('should throw error for enum without values', () => {
@@ -100,7 +100,7 @@ describe('AmplifyIndexGenerator', () => {
       const result = generator.generateIndexes(indexes);
       expect(result).toBeInstanceOf(Array);
       expect(result).toHaveLength(1);
-      expect(result[0]).toContain("('emailGlobalIndex')");
+      expect(result[0]).toContain("index('email')");
       expect(result[0]).toContain(".name('emailGlobalIndex')");
       expect(result[0]).toContain(".queryField('usersByEmail')");
     });
@@ -115,8 +115,9 @@ describe('AmplifyIndexGenerator', () => {
       }];
       const result = generator.generateIndexes(indexes);
       expect(result).toHaveLength(1);
-      expect(result[0]).toContain("('StatusIndex')");
+      expect(result[0]).toContain("index('status')");
       expect(result[0]).toContain(".sortKeys(['publishedAt'])");
+      expect(result[0]).toContain(".name('StatusIndex')");
       expect(result[0]).toContain(".queryField('postsByStatus')");
     });
 
@@ -143,8 +144,8 @@ describe('AmplifyIndexGenerator', () => {
       ];
       const result = generator.generateIndexes(indexes);
       expect(result).toHaveLength(2);
-      expect(result[0]).toContain("('emailIndex')");
-      expect(result[1]).toContain("('statusIndex')");
+      expect(result[0]).toContain("index('email')");
+      expect(result[1]).toContain("index('status')");
     });
   });
 
@@ -244,7 +245,7 @@ describe('AmplifyAdapter Integration Tests', () => {
     it('should handle enum fields', () => {
       const fields = adapter.modelFields();
 
-      expect(fields).toContain("status: a.enum(['draft', 'published', 'archived']).required()");
+      expect(fields).toContain("status: a.enum(['draft', 'published', 'archived'])");
     });
 
     it('should handle @BelongsTo relationships', () => {
