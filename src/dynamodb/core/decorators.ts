@@ -98,6 +98,11 @@ export function Attribute(options: AttributeOptions) {
     Reflect.defineMetadata('isArray', options.type === 'array', target, propertyKey);
     Reflect.defineMetadata('isDate', options.type === 'date', target, propertyKey);
 
+    // Store enum values for AmplifyAdapter
+    if (options.type === 'enums') {
+      Reflect.defineMetadata('enums', options.enums, target, propertyKey);
+    }
+
     // Track all decorated keys
     const keys = Reflect.getMetadata('keys', target) || [];
     Reflect.defineMetadata('keys', [...keys, propertyKey], target);

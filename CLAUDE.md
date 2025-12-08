@@ -215,3 +215,85 @@ await repo.query(partitionKey, sortKeyCondition);
 await repo.update(entity);
 await repo.delete(partitionKey, sortKey);
 ```
+
+## Amplify Gen 2 Adapter
+
+### Overview
+
+Location: `src/adapters/amplify/`
+
+The AmplifyAdapter generates AWS Amplify Gen 2 TypeScript code from decorator-based entity definitions. This allows users to maintain a single source of truth for their data models and generate both DynamoDB operations (via Repository) and Amplify Gen 2 schema definitions.
+
+### Architecture
+
+**Components:**
+- **AmplifyAdapter**: Main orchestrator class that extracts metadata and generates code
+- **AmplifyTypeMapper**: Maps decorator types to Amplify types (string → a.string(), etc.)
+- **AmplifyIndexGenerator**: Generates secondary index definitions with queryField names
+- **AmplifyRelationshipMapper**: Maps @BelongsTo/@HasOne/@HasMany to Amplify relationships
+
+**Key Files:**
+- `src/adapters/amplify/AmplifyAdapter.ts` - Main adapter class
+- `src/adapters/amplify/AmplifyTypeMapper.ts` - Type conversion logic
+- `src/adapters/amplify/AmplifyIndexGenerator.ts` - Index generation
+- `src/adapters/amplify/AmplifyRelationshipMapper.ts` - Relationship mapping
+- `src/adapters/amplify/types.ts` - TypeScript interfaces
+- `src/adapters/index.ts` - Public API exports
+
+### Usage
+
+```typescript
+import { AmplifyAdapter } from 'typed-ddb/adapters';
+import { User } from './entities';
+
+const adapter = new AmplifyAdapter(User);
+const amplifyCode = adapter.generate();
+// Returns complete Amplify Gen 2 model definition as string
+
+// Write to file for Amplify schema
+import { writeFileSync } from 'fs';
+writeFileSync('amplify/data/User.ts', amplifyCode);
+```
+
+### Type Mappings
+
+- `string` → `a.string()`
+- `number` → `a.float()`
+- `boolean` → `a.boolean()`
+- `date` → `a.datetime()`
+- `object` → `a.json()`
+- `array` → `a.json()`
+- `enums` → `a.enum([...])`
+- `@PartitionKey()/@SortKey()` → `a.id().required()`
+
+### Important Behaviors
+
+1. **Enum Metadata**: The @Attribute decorator now stores enum values in metadata (added in decorators.ts line 101-104)
+
+2. **Index Generation**: Only applies @Index to partition key fields; sortKey is specified in options
+
+3. **Relationship Handling**:
+   - @BelongsTo: Generates both the field AND relationship definition
+   - @HasOne/@HasMany: Finds foreign key in related model automatically
+
+4. **Table Names**: Extracted from @Table decorator but NOT used in generated code (Amplify manages table names)
+
+5. **Optional/Required**: Maps directly from decorator metadata
+
+### Limitations
+
+- Does NOT generate authorization rules
+- Does NOT auto-manage CreatedAt/UpdatedAt (unlike Repository)
+- Table names from decorators are ignored
+- Foreign keys must follow naming convention: `<modelName>Id`
+
+### Testing
+
+Location: `src/adapters/__test__/AmplifyAdapter.spec.ts`
+
+Comprehensive test suite covering:
+- Type mapping for all types
+- Field generation
+- Index generation with queryField names
+- Relationship mapping
+- Integration tests with User, Post, Profile entities
