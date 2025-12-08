@@ -551,6 +551,211 @@ const results = await repo.scan({
 });
 ```
 
+## Amplify Gen 2 Adapter
+
+The library includes an adapter to generate AWS Amplify Gen 2 schema code from your decorator-based entities. This allows you to use the same entity definitions for both DynamoDB operations and Amplify Gen 2 schema generation.
+
+### Installation
+
+The adapter is included in the main package. No additional installation is needed.
+
+### Defining Indexes for Amplify
+
+To generate proper Amplify Gen 2 indexes, use the `@AmplifyGsi` decorator instead of `@Index`. This decorator is specifically designed for Amplify schema generation:
+
+```typescript
+import { Table, PartitionKey, Attribute } from '@ivan-lee/typed-ddb';
+import { AmplifyGsi } from '@ivan-lee/typed-ddb/adapters';
+
+@Table('Users')
+class User {
+  @PartitionKey()
+  @Attribute({ type: 'string' })
+  id: string;
+
+  // Simple index (partition key only)
+  @AmplifyGsi({ queryField: 'usersByEmail' })
+  @Attribute({ type: 'string' })
+  email: string;
+
+  // Composite index (partition key + sort key)
+  @AmplifyGsi({
+    name: 'StatusIndex',
+    sortKey: 'publishedAt',
+    queryField: 'postsByStatus'
+  })
+  @Attribute({ type: 'enums', enums: ['draft', 'published'] })
+  status: 'draft' | 'published';
+
+  @Attribute({ type: 'number' })
+  publishedAt: number;
+}
+```
+
+### Generating Amplify Code
+
+The adapter provides two methods that you compose yourself to create your Amplify schema:
+
+```typescript
+import { AmplifyAdapter } from '@ivan-lee/typed-ddb/adapters';
+import { a } from '@aws-amplify/backend'; // Your Amplify import
+import { User } from './entities';
+
+// Create adapter instance
+const adapter = new AmplifyAdapter(User);
+
+// Generate model fields and indexes separately
+const fields = adapter.modelFields();
+const indexes = adapter.secondaryIndexes();
+
+// Compose your Amplify schema with custom authorization
+export const User = a
+  .model({
+    ...fields  // Spread or use template literals
+  })
+  ...indexes  // Add secondary indexes if any
+  .authorization((allow) => [
+    allow.authenticated(),
+    // Your custom auth rules here
+  ]);
+
+// Or use template literals for code generation:
+const code = `
+export const User = a
+  .model({
+    ${fields}
+  })${indexes}
+  .authorization((allow) => [
+    allow.authenticated()
+  ]);
+`;
+```
+
+**Output example:**
+```typescript
+export const User = a
+  .model({
+    id: a.id().required(),
+    email: a.string().required(),
+    name: a.string().required(),
+    age: a.float().required(),
+    // ... other fields
+  })
+  .secondaryIndexes((index) => [
+    index('emailGlobalIndex').name('emailGlobalIndex').queryField('usersByEmail')
+  ])
+  .authorization((allow) => [
+    allow.authenticated()
+  ]);
+```
+
+### Writing to Files
+
+```typescript
+import { AmplifyAdapter } from '@ivan-lee/typed-ddb/adapters';
+import { writeFileSync } from 'fs';
+import { User, Post, Profile } from './entities';
+
+// Generate for multiple entities
+const entities = [User, Post, Profile];
+
+for (const Entity of entities) {
+  const adapter = new AmplifyAdapter(Entity);
+  const code = adapter.generate();
+  writeFileSync(`amplify/data/${Entity.name}.ts`, code, 'utf-8');
+  console.log(`Generated amplify/data/${Entity.name}.ts`);
+}
+```
+
+### Type Mapping
+
+The adapter automatically maps decorator types to Amplify Gen 2 types:
+
+| Decorator Type | Amplify Type | Notes |
+|---------------|--------------|-------|
+| `string` | `a.string()` | String type |
+| `number` | `a.float()` | Numeric type |
+| `boolean` | `a.boolean()` | Boolean type |
+| `date` | `a.datetime()` | ISO timestamp |
+| `object` | `a.json()` | JSON object |
+| `array` | `a.json()` | JSON array |
+| `enums` | `a.enum([...])` | Enum with values |
+| `@PartitionKey()` | `a.id().required()` | Primary key |
+| `@SortKey()` | `a.id().required()` | Sort key |
+
+### Relationships
+
+The adapter supports the same relationships as the main library:
+
+```typescript
+// @BelongsTo generates a.belongsTo()
+@BelongsTo<Pick<User, 'id'>>(
+  (user) => user.id,
+  (id) => ({ id })
+)
+@Attribute({ type: 'string' })
+userId: Pick<User, 'id'>;
+// Generates: userId: a.string().required(), user: a.belongsTo('User', 'userId')
+
+// @HasOne generates a.hasOne()
+@HasOne(() => Profile)
+profile?: Profile;
+// Generates: profile: a.hasOne('Profile', 'userId')
+
+// @HasMany generates a.hasMany()
+@HasMany(() => Post)
+posts?: Post[];
+// Generates: posts: a.hasMany('Post', 'userId')
+```
+
+### @AmplifyGsi is a Superset of @Index
+
+`@AmplifyGsi` is a superset of the standard `@Index` decorator - it does everything `@Index` does PLUS stores Amplify-specific metadata:
+
+```typescript
+@Table('Posts')
+class Post {
+  @PartitionKey()
+  @Attribute({ type: 'string' })
+  id: string;
+
+  // Use ONLY @AmplifyGsi - works for both Repository AND Amplify
+  @AmplifyGsi({
+    name: 'StatusIndex',       // Optional: custom index name
+    sortKey: 'publishedAt',    // Optional: for composite indexes
+    queryField: 'postsByStatus' // Required: for Amplify GraphQL
+  })
+  @Attribute({ type: 'enums', enums: ['draft', 'published'] })
+  status: 'draft' | 'published';
+
+  @Attribute({ type: 'number' })
+  publishedAt: number;
+}
+
+// Works with Repository
+const repo = new Repository(Post);
+await repo.query('published', undefined, { index: 'StatusIndex' });
+
+// AND generates Amplify schema
+const adapter = new AmplifyAdapter(Post);
+const fields = adapter.modelFields();
+const indexes = adapter.secondaryIndexes();
+```
+
+**Important**:
+- ✅ Use `@AmplifyGsi` if you need Amplify Gen 2 schema generation
+- ✅ `@AmplifyGsi` works 100% with Repository operations
+- ❌ Don't use both `@Index` and `@AmplifyGsi` on the same field
+- ❌ If you only use `@Index`, AmplifyAdapter will NOT generate indexes
+
+### Important Notes
+
+⚠️ **Authorization**: Authorization rules are NOT generated automatically. You must add `.authorization()` manually in your Amplify schema.
+
+⚠️ **Table Names**: Table names from `@Table()` decorator are ignored. Amplify Gen 2 manages table names automatically based on your Amplify configuration.
+
+⚠️ **Auto-Managed Fields**: Unlike typed-ddb's Repository, Amplify does NOT automatically manage `CreatedAt` and `UpdatedAt` fields. You'll need to handle these manually in your Amplify resolvers if needed.
+
 ## Testing
 
 The library includes test utilities for in-memory testing:
