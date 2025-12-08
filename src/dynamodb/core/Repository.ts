@@ -37,7 +37,8 @@ export class Repository<T, PaginationKey extends string = string> {
     // Generate DynamoDB schema dynamically
     const schemaFields: any = {};
 
-    const tableName = Reflect.getMetadata('tableName', ModelClass) || ModelClass.name;
+    const tableNameProvider = Reflect.getMetadata('tableName', ModelClass) || ModelClass.name;
+    const tableName = typeof tableNameProvider === 'function' ? tableNameProvider() : tableNameProvider;
 
     // Retrieve all decorated keys
     const keys: string[] = Reflect.getMetadata('keys', ModelClass.prototype) || [];

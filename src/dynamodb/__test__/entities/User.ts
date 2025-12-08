@@ -2,7 +2,7 @@ import { Table, Attribute, PartitionKey, Index, HasOne, HasMany } from '../../co
 import { Profile } from './Profile';
 import { Post } from './Post';
 
-@Table('Users')
+@Table(() => 'Users')
 export class User {
   @PartitionKey()
   @Attribute({ type: 'string' })

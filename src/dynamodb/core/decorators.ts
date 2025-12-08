@@ -43,7 +43,7 @@ interface SecondaryIndexOptions {
   sortKey?: string;
 }
 
-export function Table(name: string) {
+export function Table(name: string | (() => string)) {
   return (constructor: Function) => {
     Reflect.defineMetadata('tableName', name, constructor);
   };

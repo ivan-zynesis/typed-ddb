@@ -1,6 +1,6 @@
 {
   "name": "@ivan-lee/typed-ddb",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A package to hold all helper libraries related for data modeling and transformation",
   "scripts": {
     "build": "tsc -b ./tsconfig.build.json --force",
@@ -16,7 +16,7 @@
   "license": "MIT",
   "dependencies": {
     "class-transformer": "^0.5.1",
-    "class-validator": "^0.14.1",
+    "class-validator": "^0.14.3",
     "dynamoose": "^4.0.4",
     "@preact/signals": "^1.2.2"
   },
