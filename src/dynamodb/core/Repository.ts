@@ -32,7 +32,7 @@ export class Repository<T, PaginationKey extends string = string> {
   protected readonly model;
   readonly ModelClass: new () => T;
 
-  constructor(ModelClass: new () => T) {
+  constructor(ModelClass: new () => T, lazyCreate = true) {
     this.ModelClass = ModelClass;
     // Generate DynamoDB schema dynamically
     const schemaFields: any = {};
@@ -74,7 +74,7 @@ export class Repository<T, PaginationKey extends string = string> {
     const schema = new Schema(schemaFields);
 
     // Initialize the Dynamoose model
-    this.model = model(tableName, schema);
+    this.model = model(tableName, schema, { create: lazyCreate });
   }
 
   // Helper to get the @PartitionKey metadata
