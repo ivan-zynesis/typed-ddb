@@ -34,7 +34,7 @@ describe('AmplifyTypeMapper', () => {
     });
 
     it('should map date-iso type', () => {
-      const result = mapper.mapAttributeType('date', false, false, false);
+      const result = mapper.mapAttributeType('date-iso', false, false, false);
       expect(result).toBe('a.string().required()');
     });
 
