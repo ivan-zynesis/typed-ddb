@@ -52,7 +52,7 @@ export class Repository<T, PaginationKey extends string = string> {
       const optional = Reflect.getMetadata('optional', ModelClass.prototype, key as string);
 
       let dataType = type;
-      if (['enums', 'object', 'array'].includes(type)) {dataType = 'string';}
+      if (['enums', 'object', 'array', 'date-iso'].includes(type)) {dataType = 'string';}
       if (type === 'date') {dataType = 'number';}
 
       if (type) {
@@ -123,6 +123,15 @@ export class Repository<T, PaginationKey extends string = string> {
     return new Date(serialized);
   }
 
+  private serializeDateIso(plain: Date | undefined): string | undefined {
+    if (!plain) {return undefined;}
+    return plain.toISOString();
+  }
+
+  private deserializeDateIso(serialized?: string): any {
+    if (!serialized) {return undefined;}
+    return new Date(serialized);
+  }
    
   private transform(t: T | null, mode: 'serialize' | 'deserialize'): T | null {
     if (!t) {return null;}
@@ -134,6 +143,7 @@ export class Repository<T, PaginationKey extends string = string> {
       const isObject = Reflect.getMetadata('isObject', this.ModelClass.prototype, key as string);
       const isArray = Reflect.getMetadata('isArray', this.ModelClass.prototype, key as string);
       const isDate = Reflect.getMetadata('isDate', this.ModelClass.prototype, key as string);
+      const isDateIso = Reflect.getMetadata('isDateIso', this.ModelClass.prototype, key as string);
 
       if (isObject || isArray) {
         t[key] = mode === 'serialize'
@@ -146,6 +156,13 @@ export class Repository<T, PaginationKey extends string = string> {
         t[key] = mode === 'serialize'
           ? this.serializeDate(value)
           : this.deserializeDate(t[key] as number);
+      }
+
+      if (isDateIso) {
+        const value: Date | undefined = t[key] as any;
+        t[key] = mode === 'serialize'
+          ? this.serializeDateIso(value)
+          : this.deserializeDateIso(t[key] as string);
       }
 
       const fkTransformer = mode === 'serialize'
@@ -270,17 +287,16 @@ export class Repository<T, PaginationKey extends string = string> {
     return array[0];
   }
 
-  async create(item: Prettify<Omit<T, 'CreatedAt' | 'UpdatedAt'>>): Promise<T> {
+  async create(item: Prettify<Omit<T, 'CreatedAt' | 'UpdatedAt' | 'createdAt' | 'updatedAt'>>): Promise<T> {
     const keys: string[] = Reflect.getMetadata('keys', this.ModelClass.prototype) || [];
     const createdAt = new Date();
-    if (keys.includes('CreatedAt')) {
-      // @ts-ignore
-      item['CreatedAt'] = createdAt;
-    }
 
-    if (keys.includes('UpdatedAt')) {
-      // @ts-ignore
-      item['UpdatedAt'] = createdAt;
+    const autoPopulateCreatedAtFor = ['CreatedAt', 'createdAt', 'UpdatedAt', 'updatedAt'];
+    for (const key of autoPopulateCreatedAtFor) {
+      if (keys.includes(key)) {
+        // @ts-ignore
+        item[key] = createdAt;
+      }
     }
 
     await this.model.create(
@@ -295,7 +311,7 @@ export class Repository<T, PaginationKey extends string = string> {
     return result;
   }
 
-  async update(item: Omit<T, 'UpdatedAt'>): Promise<T> {
+  async update(item: Omit<T, 'UpdatedAt' | 'updatedAt'>): Promise<T> {
     const keys: string[] = Reflect.getMetadata('keys', this.ModelClass.prototype) || [];
 
     // Get the original item for trigger context
@@ -315,8 +331,13 @@ export class Repository<T, PaginationKey extends string = string> {
       'deserialize',
     );
 
-    if (keys.includes('UpdatedAt')) {
-      (item as any)['UpdatedAt'] = new Date();
+    const updatedAt = new Date();
+    const autoPopulateUpdatedAtFor = ['UpdatedAt', 'updatedAt'];
+    for (const key of autoPopulateUpdatedAtFor) {
+      if (keys.includes(key)) {
+        // @ts-ignore
+        item[key] = updatedAt;
+      }
     }
     
     await this.model.update(
