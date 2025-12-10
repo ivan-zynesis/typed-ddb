@@ -31,8 +31,10 @@ export class AmplifyTypeMapper {
         return 'a.float()';
       case 'boolean':
         return 'a.boolean()';
-      case 'date': // a timestamp under the hood
-        return 'a.float()';
+      case 'date':
+        return 'a.float()'; // a timestamp
+      case 'date-iso':
+        return 'a.string()'; // iso date time string
       case 'object':
         return 'a.json()';
       case 'array':
