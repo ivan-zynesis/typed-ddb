@@ -30,7 +30,7 @@ describe('AmplifyTypeMapper', () => {
 
     it('should map date type', () => {
       const result = mapper.mapAttributeType('date', false, false, false);
-      expect(result).toBe('a.datetime().required()');
+      expect(result).toBe('a.float().required()');
     });
 
     it('should map object type', () => {
@@ -192,8 +192,8 @@ describe('AmplifyAdapter Integration Tests', () => {
       expect(fields).toContain('isActive: a.boolean().required()');
       expect(fields).toContain('metadata: a.json()');
       expect(fields).toContain('tags: a.json()');
-      expect(fields).toContain('CreatedAt: a.datetime().required()');
-      expect(fields).toContain('UpdatedAt: a.datetime()');
+      expect(fields).toContain('CreatedAt: a.float().required()');
+      expect(fields).toContain('UpdatedAt: a.float()');
 
       expect(indexes).toBeInstanceOf(Array);
       expect(indexes.length).toBeGreaterThan(0);
@@ -210,8 +210,8 @@ describe('AmplifyAdapter Integration Tests', () => {
       expect(fields).toContain('isActive: a.boolean().required()');
       expect(fields).toContain('metadata: a.json()');
       expect(fields).toContain('tags: a.json()');
-      expect(fields).toContain('CreatedAt: a.datetime().required()');
-      expect(fields).toContain('UpdatedAt: a.datetime()');
+      expect(fields).toContain('CreatedAt: a.float().required()');
+      expect(fields).toContain('UpdatedAt: a.float()');
     });
 
     it('should generate secondary indexes', () => {
@@ -238,8 +238,8 @@ describe('AmplifyAdapter Integration Tests', () => {
       expect(fields).toContain('content: a.string().required()');
       expect(fields).toContain('status: a.enum');
       expect(fields).toContain('publishedAt: a.float().required()');
-      expect(fields).toContain('CreatedAt: a.datetime().required()');
-      expect(fields).toContain('UpdatedAt: a.datetime()');
+      expect(fields).toContain('CreatedAt: a.float().required()');
+      expect(fields).toContain('UpdatedAt: a.float()');
     });
 
     it('should handle enum fields', () => {
