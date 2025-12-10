@@ -20,6 +20,8 @@ module.exports = {
     },
     moduleFileExtensions: ['ts', 'js'],
     collectCoverageFrom: [
-        'src/dynamodb/core/Repository.ts'
+        'src/dynamodb/core/Repository.ts',
+        'src/dynamodb/core/signal.ts',
+        'src/adapters/amplify/*.ts'
     ]
 };
