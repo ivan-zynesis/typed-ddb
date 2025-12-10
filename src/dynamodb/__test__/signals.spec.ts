@@ -1,4 +1,4 @@
-import { Repository } from '../core';
+import { Repository, Table, PartitionKey, Attribute } from '../core';
 import { 
   PublishChanges, 
   SubscribeToChanges, 
@@ -6,7 +6,6 @@ import {
   EntityChangeEvent,
   EntitySignalStore
 } from '../core/signals';
-import { Table, PartitionKey, Attribute } from '../core/decorators';
 import { AwsTestContainer, StartedTestContainer } from '../test-utility/DynamoDbEmulator';
 
 // Test entity with triggers enabled

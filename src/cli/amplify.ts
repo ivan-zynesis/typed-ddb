@@ -2,7 +2,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { AmplifyAdapter } from '../adapters/amplify/AmplifyAdapter';
+import { AmplifyAdapter } from '../adapters';
 
 // Enable TypeScript loading for Node.js
 import 'reflect-metadata';
@@ -130,7 +130,7 @@ function generateMaterialFile(entityName: string, EntityClass: new () => any): s
 export const ${entityName}Material = {
   modelFields: ${modelFieldsIndented},
   secondaryIndexes: ${secondaryIndexes.length > 0
-    ? `(index: any) => [\n    ${secondaryIndexes.map(idx => `index.${idx}`).join(',\n    ')}\n  ]`
+    ? `(index: any) => [\n    ${secondaryIndexes.map(idx => `${idx}`).join(',\n    ')}\n  ]`
     : '() => []'}
 };
 `;

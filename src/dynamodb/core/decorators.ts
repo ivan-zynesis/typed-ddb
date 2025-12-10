@@ -36,7 +36,12 @@ type DateAttributeOption = {
   optional?: boolean;
 }
 
-type AttributeOptions = PrimitiveAttributeOption | EnumAttributeOption | ObjectAttributeOption | ArrayAttributeOption | DateAttributeOption;
+type DateIsoAttributeOption = {
+  type: 'date-iso';
+  optional?: boolean;
+}
+
+type AttributeOptions = PrimitiveAttributeOption | EnumAttributeOption | ObjectAttributeOption | ArrayAttributeOption | DateAttributeOption | DateIsoAttributeOption;
 interface SecondaryIndexOptions {
   type?: 'global' | 'local';
   name?: string;
@@ -97,6 +102,7 @@ export function Attribute(options: AttributeOptions) {
     Reflect.defineMetadata('isObject', options.type === 'object', target, propertyKey);
     Reflect.defineMetadata('isArray', options.type === 'array', target, propertyKey);
     Reflect.defineMetadata('isDate', options.type === 'date', target, propertyKey);
+    Reflect.defineMetadata('isDateIso', options.type === 'date-iso', target, propertyKey);
 
     // Store enum values for AmplifyAdapter
     if (options.type === 'enums') {

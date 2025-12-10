@@ -1,6 +1,6 @@
 {
   "name": "@ivan-lee/typed-ddb",
-  "version": "0.2.2",
+  "version": "0.2.5",
   "description": "A package to hold all helper libraries related for data modeling and transformation",
   "scripts": {
     "build": "tsc -b ./tsconfig.build.json --force",
@@ -11,7 +11,7 @@
   "main": "./dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "typed-ddb": "./dist/cli/index.js"
+    "typed-ddb": "dist/cli/index.js"
   },
   "keywords": [
     "dynamodb",
@@ -22,7 +22,10 @@
     "aws",
     "amplify-gen-2"
   ],
-  "repository": "https://github.com/ivan-zynesis/typed-ddb",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ivan-zynesis/typed-ddb.git"
+  },
   "author": "ivan-zynesis",
   "license": "MIT",
   "dependencies": {
@@ -46,5 +49,9 @@
     "ts-jest": "^29.2.5",
     "typescript": "^5.8.3"
   },
-  "packageManager": "pnpm@9.13.0+sha512.beb9e2a803db336c10c9af682b58ad7181ca0fbd0d4119f2b33d5f2582e96d6c0d93c85b23869295b765170fbdaa92890c0da6ada457415039769edf3c959efe"
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0+sha512.ea45517d5285d123eac02c3793505fa1fd6da90a2fc60d1e8d9e0c1e9292886ecfaff513f062b9d1cc8021bb8615033b1ac5bea3b2ee3fc165a6d7034bbe6b03"
 }
