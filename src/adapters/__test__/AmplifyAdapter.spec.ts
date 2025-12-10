@@ -33,6 +33,11 @@ describe('AmplifyTypeMapper', () => {
       expect(result).toBe('a.float().required()');
     });
 
+    it('should map date-iso type', () => {
+      const result = mapper.mapAttributeType('date', false, false, false);
+      expect(result).toBe('a.string().required()');
+    });
+
     it('should map object type', () => {
       const result = mapper.mapAttributeType('object', false, false, false);
       expect(result).toBe('a.json().required()');
