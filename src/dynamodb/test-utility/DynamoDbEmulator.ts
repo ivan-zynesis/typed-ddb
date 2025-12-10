@@ -16,6 +16,7 @@ export class AwsTestContainer extends GenericContainer {
 
   override async start(): Promise<StartedTestContainer> {
     const started = await super.start();
+    delete process.env.AWS_PROFILE;
     process.env.AWS_ACCESS_KEY_ID = 'dummy';
     process.env.AWS_SECRET_ACCESS_KEY = 'dummy';
     process.env.AWS_REGION = 'us-east-1';
