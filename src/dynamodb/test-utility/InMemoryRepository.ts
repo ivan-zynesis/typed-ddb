@@ -28,30 +28,28 @@ export class InMemoryRepository<T> extends Repository<T> {
       throw new Error('InMemoryRepository is a mocked DB and does not has join table capability');
     }
 
-    const key = this.constructKey(hashKeyValue, sortKeyValue);
-    return this.mockedDb.get(key) ?? null;
+    const [partitionKey, sortKey] = this.serializeKeysFromInput(hashKeyValue, sortKeyValue);
+    return this.mockedDb.get(partitionKey, sortKey) ?? null;
   }
 
   async create(item: T): Promise<T> {
-    const [hashKeyValue, sortKeyValue] = this.getKey(item);
+    const [hashKeyValue, sortKeyValue] = this.getSerializedKeysFromItem(item);
     const existed = await this.get(hashKeyValue, sortKeyValue);
 
     if (existed) {throw new Error('Already exist');}
 
-    const key = this.constructKey(hashKeyValue, sortKeyValue);
-    this.mockedDb.set(key, item);
+    this.mockedDb.set(hashKeyValue, sortKeyValue, item);
     return item;
   }
 
   async update(item: T): Promise<T> {
-    const [hashKeyValue, sortKeyValue] = this.getKey(item);
+    const [hashKeyValue, sortKeyValue] = this.getSerializedKeysFromItem(item);
     const existed = await this.get(hashKeyValue, sortKeyValue);
 
     if (!existed) {throw new Error('Does not exist');}
 
-    const key = this.constructKey(hashKeyValue, sortKeyValue);
     // just overwrite
-    this.mockedDb.set(key, item);
+    this.mockedDb.set(hashKeyValue, sortKeyValue, item);
     return item;
   }
 
@@ -61,8 +59,8 @@ export class InMemoryRepository<T> extends Repository<T> {
       throw new Error(`Instance ${partitionKeyValue}${sortKeyValue ? '-' + sortKeyValue : ''} is not found for deletion`);
     }
 
-    const key = this.constructKey(partitionKeyValue, sortKeyValue);
-    this.mockedDb.delete(key);
+    const [partitionKey, sortKey] = this.serializeKeysFromInput(partitionKeyValue, sortKeyValue);
+    this.mockedDb.delete(partitionKey, sortKey);
   }
 
   async query<K extends keyof T>(partitionKeyValue: T[K], sortKeyCondition?: Condition<T[K]>, options?: { index?: string; limit?: number; lastKey?: string; sort?: SortOrder }): Promise<QueryResult<T, string>> {
@@ -73,16 +71,36 @@ export class InMemoryRepository<T> extends Repository<T> {
       throw new Error('Sort key condition provided for model without sort key');
     }
 
-    const allItems = this.mockedDb.entries().map(([, value]) => value as T);
-    const filtered = allItems.filter((item) => item[hashKeyField] === partitionKeyValue)
-      .filter((item) => {
-        if (!sortKeyCondition || !sortKeyMeta) {return true;}
-        return this.matchesCondition(item[sortKeyMeta.field], sortKeyCondition);
-      });
+    const serializedPartitionValue = this.serializeFieldValue(hashKeyField, partitionKeyValue);
+    const sourceEntries = options?.index
+      ? this.mockedDb.entries()
+      : this.mockedDb.valuesForPartition(serializedPartitionValue).map((entry) => ({
+        partitionKey: serializedPartitionValue,
+        sortKey: entry.sortKey,
+        value: entry.value as T,
+      }));
+
+    const serializedSortCondition = sortKeyCondition && sortKeyMeta
+      ? this.serializeCondition(sortKeyCondition, sortKeyMeta.field)
+      : undefined;
+
+    const filtered = sourceEntries
+      .filter(({ value }) => this.serializeFieldValue(hashKeyField, value[hashKeyField]) === serializedPartitionValue)
+      .filter(({ value }) => {
+        if (!serializedSortCondition || !sortKeyMeta) {return true;}
+        const serializedSortValue = this.serializeFieldValue(sortKeyMeta.field, value[sortKeyMeta.field]);
+        return this.matchesCondition(serializedSortValue, serializedSortCondition);
+      })
+      .map(({ value }) => value);
 
     const sorted = this.sortItems(filtered, sortKeyMeta?.field, options?.sort);
 
-    const paginated = this.applyPagination(sorted, options?.limit, options?.lastKey);
+    const paginated = this.applyPagination(
+      sorted,
+      options?.limit,
+      options?.lastKey,
+      (item) => this.getSerializedKeyRecordFromItem(item, options?.index),
+    );
     return paginated;
   }
 
@@ -94,33 +112,59 @@ export class InMemoryRepository<T> extends Repository<T> {
       throw new Error('Sort key filter provided for model without sort key');
     }
 
-    const allItems = this.mockedDb.entries().map(([, value]) => value as T);
-    const filtered = allItems.filter((item) => {
-      const partitionMatch = !filters.partitionKey || (partitionKeyMeta && this.matchesCondition(item[partitionKeyMeta.field], filters.partitionKey));
-      const sortMatch = !filters.sortKey || (sortKeyMeta && this.matchesCondition(item[sortKeyMeta.field], filters.sortKey));
-      return partitionMatch && sortMatch;
-    });
+    const serializedPartitionCondition = filters.partitionKey && partitionKeyMeta
+      ? this.serializeCondition(filters.partitionKey, partitionKeyMeta.field)
+      : undefined;
+    const serializedSortCondition = filters.sortKey && sortKeyMeta
+      ? this.serializeCondition(filters.sortKey, sortKeyMeta.field)
+      : undefined;
 
-    const paginated = this.applyPagination(filtered, options?.limit, options?.lastKey);
+    const allEntries = this.mockedDb.entries();
+    const filtered = allEntries
+      .filter(({ value }) => {
+        if (!serializedPartitionCondition || !partitionKeyMeta) {return true;}
+        const serializedPartition = this.serializeFieldValue(partitionKeyMeta.field, value[partitionKeyMeta.field]);
+        return this.matchesCondition(serializedPartition, serializedPartitionCondition);
+      })
+      .filter(({ value }) => {
+        if (!serializedSortCondition || !sortKeyMeta) {return true;}
+        const serializedSort = this.serializeFieldValue(sortKeyMeta.field, value[sortKeyMeta.field]);
+        return this.matchesCondition(serializedSort, serializedSortCondition);
+      })
+      .map(({ value }) => value);
+
+    const paginated = this.applyPagination(
+      filtered,
+      options?.limit,
+      options?.lastKey,
+      (item) => this.getSerializedKeyRecordFromItem(item, options?.index),
+    );
     return paginated;
   }
 
-  private getKey(t: T): [any, any] {
-    const { field: hashKeyField } = this.getPartitionKeyMeta();
-    const { field: sortKeyField } = this.getSortKeyMeta() ?? {};
+  private getSerializedKeysFromItem(t: T, index?: string): [any, any] {
+    const { field: hashKeyField } = this.getPartitionKeyMeta(index);
+    const { field: sortKeyField } = this.getSortKeyMeta(index) ?? {};
 
     return [
-      t[hashKeyField],
-      sortKeyField ? t[sortKeyField] : undefined,
+      this.serializeFieldValue(hashKeyField, t[hashKeyField]),
+      sortKeyField ? this.serializeFieldValue(sortKeyField, t[sortKeyField]) : undefined,
     ];
   }
 
-  private constructKey(hashKeyValue: any, sortKeyValue?: any): string {
-    let key = JSON.stringify(hashKeyValue);
-    if (sortKeyValue) {
-      key = `${key}_${JSON.stringify(sortKeyValue)}`;
-    }
-    return key;
+  private serializeKeysFromInput(hashKeyValue: any, sortKeyValue?: any, index?: string): [any, any] {
+    const { field: hashKeyField } = this.getPartitionKeyMeta(index);
+    const { field: sortKeyField } = this.getSortKeyMeta(index) ?? {};
+
+    return [
+      this.serializeFieldValue(hashKeyField, hashKeyValue),
+      sortKeyField && sortKeyValue !== undefined ? this.serializeFieldValue(sortKeyField, sortKeyValue) : undefined,
+    ];
+  }
+
+  private getSerializedKeyRecordFromItem(item: T, index?: string): { partitionKey: any; sortKey?: any } {
+    const [partitionKey, sortKey] = this.getSerializedKeysFromItem(item, index);
+    return { partitionKey, sortKey };
   }
 
   private matchesCondition(value: any, condition: Condition<any>): boolean {
@@ -140,11 +184,20 @@ export class InMemoryRepository<T> extends Repository<T> {
     }
   }
 
+  private serializeCondition(condition: Condition<any>, field: keyof T): Condition<any> {
+    const [[operator, raw]] = Object.entries(condition);
+    if (operator === 'between') {
+      const [start, end] = raw as [any, any];
+      return { between: [this.serializeFieldValue(field, start), this.serializeFieldValue(field, end)] } as Condition<any>;
+    }
+    return { [operator]: this.serializeFieldValue(field, raw) } as Condition<any>;
+  }
+
   private sortItems(items: T[], sortKey?: keyof T, sortOrder: SortOrder = SortOrder.ascending): T[] {
     if (!sortKey) {return items;}
     const sorted = [...items].sort((a, b) => {
-      const aValue = a[sortKey];
-      const bValue = b[sortKey];
+      const aValue = this.serializeFieldValue(sortKey, a[sortKey]);
+      const bValue = this.serializeFieldValue(sortKey, b[sortKey]);
 
       if (aValue === bValue) {return 0;}
       return aValue > bValue ? 1 : -1;
@@ -152,13 +205,18 @@ export class InMemoryRepository<T> extends Repository<T> {
     return sortOrder === 'descending' ? sorted.reverse() : sorted;
   }
 
-  private applyPagination(items: T[], limit = 1000, lastKey?: string): QueryResult<T, string> {
+  private applyPagination(items: T[], limit = 1000, lastKey?: string, keySelector?: (item: T) => { partitionKey: any; sortKey?: any }): QueryResult<T, string> {
+    const getKey = keySelector ?? ((item: T) => {
+      const [partitionKey, sortKey] = this.getSerializedKeysFromItem(item);
+      return { partitionKey, sortKey };
+    });
+
     let startIndex = 0;
     if (lastKey) {
-      const parsed = JSON.parse(lastKey) as { hashKeyValue: any; sortKeyValue?: any };
+      const parsed = JSON.parse(lastKey) as { partitionKey: any; sortKey?: any };
       const index = items.findIndex((item) => {
-        const [hashKeyValue, sortKeyValue] = this.getKey(item);
-        return this.areKeysEqual(parsed.hashKeyValue, hashKeyValue) && this.areKeysEqual(parsed.sortKeyValue, sortKeyValue);
+        const { partitionKey, sortKey } = getKey(item);
+        return this.areKeysEqual(parsed.partitionKey, partitionKey) && this.areKeysEqual(parsed.sortKey, sortKey);
       });
       if (index >= 0) {
         startIndex = index + 1;
@@ -171,8 +229,8 @@ export class InMemoryRepository<T> extends Repository<T> {
 
     const hasMore = startIndex + sliced.length < items.length;
     if (hasMore && sliced.length > 0) {
-      const [hashKeyValue, sortKeyValue] = this.getKey(sliced[sliced.length - 1]);
-      result.lastKey = JSON.stringify({ hashKeyValue, sortKeyValue });
+      const { partitionKey, sortKey } = getKey(sliced[sliced.length - 1]);
+      result.lastKey = JSON.stringify({ partitionKey, sortKey });
     }
 
     return result;
@@ -181,5 +239,11 @@ export class InMemoryRepository<T> extends Repository<T> {
   private areKeysEqual(left: any, right: any): boolean {
     if (left === undefined && right === undefined) {return true;}
     return JSON.stringify(left) === JSON.stringify(right);
+  }
+
+  private serializeFieldValue(field: keyof T | undefined, value: any): any {
+    if (field === undefined) {return undefined;}
+    const serializer = Reflect.getMetadata('belongsTo', this.ModelClass.prototype, field as string);
+    return serializer ? serializer(value) : value;
   }
 }

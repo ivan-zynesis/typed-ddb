@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import {
   Attribute,
+  BelongsTo,
   Index,
   PartitionKey,
   SortOrder,
@@ -22,6 +23,27 @@ class TestEntity {
   @Index({ name: 'CategoryCreatedAtIndex', sortKey: 'createdAt' })
   @Attribute({ type: 'string' })
   category!: string;
+}
+
+@Table('Parent')
+class ParentEntity {
+  @PartitionKey()
+  @Attribute({ type: 'string' })
+  id!: string;
+}
+
+@Table('Child')
+class ChildEntity {
+  @BelongsTo<Pick<ParentEntity, 'id'>>(
+    (parent: Pick<ParentEntity, 'id'>) => parent.id,
+    (id: string) => ({ id })
+  )
+  @Attribute({ type: 'string' })
+  parent!: Pick<ParentEntity, 'id'>;
+
+  @SortKey()
+  @Attribute({ type: 'number' })
+  seq!: number;
 }
 
 describe('InMemoryRepository', () => {
@@ -93,6 +115,22 @@ describe('InMemoryRepository', () => {
 
     expect(result.count).toBe(2);
     expect(result.map((r) => r.id).sort()).toEqual(['user-1', 'user-2']);
+  });
+
+  it('serializes partition and sort keys when using belongsTo', async () => {
+    const belongsRepo = new InMemoryRepository(ChildEntity);
+    belongsRepo.mockedDb.flush();
+
+    await belongsRepo.create({ parent: { id: 'parent-1' }, seq: 1 } as ChildEntity);
+    await belongsRepo.create({ parent: { id: 'parent-1' }, seq: 2 } as ChildEntity);
+    await belongsRepo.create({ parent: { id: 'parent-2' }, seq: 1 } as ChildEntity);
+
+    const queryResult = await belongsRepo.query({ id: 'parent-1' });
+    expect(queryResult.count).toBe(2);
+    expect(queryResult.map((i) => i.seq)).toEqual([1, 2]);
+
+    const scanResult = await belongsRepo.scan({ partitionKey: { eq: { id: 'parent-1' } }, sortKey: { between: [1, 2] } });
+    expect(scanResult.count).toBe(2);
   });
 
   it('supports delete for existing items and errors when missing', async () => {
