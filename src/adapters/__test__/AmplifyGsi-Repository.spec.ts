@@ -70,6 +70,7 @@ describe('Repository with @AmplifyGsi decorated entities', () => {
       const amplifyMeta = Reflect.getMetadata('amplifyGsi', prototype, 'status');
       expect(amplifyMeta).toBeDefined();
       expect(amplifyMeta.queryField).toBe('postsByStatus');
+      expect(amplifyMeta.name).toBe('StatusIndex');
       expect(amplifyMeta.sortKey).toBe('publishedAt');
     });
   });
