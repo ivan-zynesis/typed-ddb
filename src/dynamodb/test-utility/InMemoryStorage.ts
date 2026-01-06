@@ -28,6 +28,13 @@ export class InMemoryStorage<K extends string = string, V extends DataClass | Pr
     return GLOBAL_STORE[this.topic][k] as V;
   }
 
+  entries(): Array<[K, V]> {
+    const topicStore = GLOBAL_STORE[this.topic] || {};
+    return Object.entries(topicStore)
+      .filter(([, value]) => value !== undefined)
+      .map(([key, value]) => [key as K, value as V]);
+  }
+
   delete(k: K): void {
     GLOBAL_STORE[this.topic][k] = undefined;
   }
