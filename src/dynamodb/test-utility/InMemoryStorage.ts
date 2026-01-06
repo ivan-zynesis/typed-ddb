@@ -1,4 +1,4 @@
-const GLOBAL_STORE: Record<string, Record<string, Primitive | DataClass | Array<DataClass>>> = {};
+const GLOBAL_STORE: Record<string, Record<string, Record<string, Primitive | DataClass | Array<DataClass>>>> = {};
 
 type Primitive = number | string | boolean | Array<Primitive>;
 
@@ -12,6 +12,8 @@ interface DataClass {
  * Serve only as test utility.
  */
 export class InMemoryStorage<K extends string = string, V extends DataClass | Primitive | Array<DataClass> = Primitive> {
+  private static readonly NO_SORT_KEY = '__NO_SORT_KEY__';
+
   constructor(
     private readonly topic: string,
   ) {
@@ -20,23 +22,60 @@ export class InMemoryStorage<K extends string = string, V extends DataClass | Pr
     }
   }
 
-  set(k: K, v: V): void {
-    GLOBAL_STORE[this.topic][k] = v;
+  set(partitionKey: K, sortKey: string | undefined, v: V): void {
+    const topicStore = GLOBAL_STORE[this.topic];
+    if (!topicStore[partitionKey]) {
+      topicStore[partitionKey] = {};
+    }
+    const normalizedSortKey = sortKey ?? InMemoryStorage.NO_SORT_KEY;
+    topicStore[partitionKey][normalizedSortKey] = v;
   }
 
-  get(k: K): V | undefined {
-    return GLOBAL_STORE[this.topic][k] as V;
+  get(partitionKey: K, sortKey?: string): V | undefined {
+    const topicStore = GLOBAL_STORE[this.topic];
+    const partition = topicStore[partitionKey];
+    if (!partition) {return undefined;}
+    const normalizedSortKey = sortKey ?? InMemoryStorage.NO_SORT_KEY;
+    return partition[normalizedSortKey] as V;
   }
 
-  entries(): Array<[K, V]> {
+  entries(): Array<{ partitionKey: K; sortKey?: string; value: V }> {
     const topicStore = GLOBAL_STORE[this.topic] || {};
-    return Object.entries(topicStore)
-      .filter(([, value]) => value !== undefined)
-      .map(([key, value]) => [key as K, value as V]);
+    const entries: Array<{ partitionKey: K; sortKey?: string; value: V }> = [];
+
+    for (const [pk, sortMap] of Object.entries(topicStore)) {
+      for (const [sk, value] of Object.entries(sortMap)) {
+        if (value === undefined) {continue;}
+        entries.push({
+          partitionKey: pk as K,
+          sortKey: sk === InMemoryStorage.NO_SORT_KEY ? undefined : sk,
+          value: value as V,
+        });
+      }
+    }
+
+    return entries;
   }
 
-  delete(k: K): void {
-    GLOBAL_STORE[this.topic][k] = undefined;
+  valuesForPartition(partitionKey: K): Array<{ sortKey?: string; value: V }> {
+    const topicStore = GLOBAL_STORE[this.topic] || {};
+    const partition = topicStore[partitionKey];
+    if (!partition) {return [];}
+
+    return Object.entries(partition)
+      .filter(([, value]) => value !== undefined)
+      .map(([sortKey, value]) => ({
+        sortKey: sortKey === InMemoryStorage.NO_SORT_KEY ? undefined : sortKey,
+        value: value as V,
+      }));
+  }
+
+  delete(partitionKey: K, sortKey?: string): void {
+    const topicStore = GLOBAL_STORE[this.topic];
+    const partition = topicStore[partitionKey];
+    if (!partition) {return;}
+    const normalizedSortKey = sortKey ?? InMemoryStorage.NO_SORT_KEY;
+    delete partition[normalizedSortKey];
   }
 
   flush() {
