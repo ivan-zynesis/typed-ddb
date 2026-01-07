@@ -244,6 +244,16 @@ export class InMemoryRepository<T> extends Repository<T> {
   private serializeFieldValue(field: keyof T | undefined, value: any): any {
     if (field === undefined) {return undefined;}
     const serializer = Reflect.getMetadata('belongsTo', this.ModelClass.prototype, field as string);
-    return serializer ? serializer(value) : value;
+    if (!serializer) {return value;}
+
+    const type = Reflect.getMetadata('type', this.ModelClass.prototype, field as string);
+    const isPrimitive = ['string', 'number', 'boolean'].includes(typeof value);
+
+    // If already in serialized primitive form, skip serializer to support downstream callers passing serialized keys
+    if (isPrimitive && type === 'string') {
+      return value;
+    }
+
+    return serializer(value);
   }
 }

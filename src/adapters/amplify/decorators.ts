@@ -66,7 +66,7 @@ export function AmplifyGsi(options: AmplifyGsiOptions) {
     const propertyType = Reflect.getMetadata('type', target, propertyKey);
     Reflect.defineMetadata('index', {
       type,
-      name: options.name,
+      name: indexName,
       sortKey: options.sortKey,
     }, target, propertyKey);
 
