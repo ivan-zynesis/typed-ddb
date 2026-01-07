@@ -9,6 +9,7 @@ import {
   Table,
 } from '../../core';
 import { InMemoryRepository } from '../InMemoryRepository';
+import { AmplifyGsi } from '../../../adapters';
 
 @Table('InMemoryRepoTest')
 class TestEntity {
@@ -44,6 +45,26 @@ class ChildEntity {
   @SortKey()
   @Attribute({ type: 'number' })
   seq!: number;
+}
+
+@Table('AmplifyBelongs')
+class AmplifyBelongsEntity {
+  @PartitionKey()
+  @Attribute({ type: 'string' })
+  id!: string;
+
+  @SortKey()
+  @Attribute({ type: 'number' })
+  createdAt!: number;
+
+  @BelongsTo<Pick<ParentEntity, 'id'>>(
+    (parent: Pick<ParentEntity, 'id'>) => parent.id,
+    (id: string) => ({ id }),
+    'index'
+  )
+  @AmplifyGsi({ name: 'ByParent', sortKey: 'createdAt', queryField: 'byParent' })
+  @Attribute({ type: 'string' })
+  parent!: Pick<ParentEntity, 'id'>;
 }
 
 describe('InMemoryRepository', () => {
@@ -94,6 +115,9 @@ describe('InMemoryRepository', () => {
     await repo.create({ id: 'user-2', createdAt: 3, category: 'alpha' } as TestEntity);
     await repo.create({ id: 'user-3', createdAt: 2, category: 'beta' } as TestEntity);
 
+    const wrongPartitionValue = await repo.query('user-1', { ge: 0 }, { index: 'CategoryCreatedAtIndex' });
+    expect(wrongPartitionValue.count).toBe(0);
+
     const result = await repo.query('alpha', { ge: 0 }, {
       index: 'CategoryCreatedAtIndex',
       sort: SortOrder.descending,
@@ -131,6 +155,24 @@ describe('InMemoryRepository', () => {
 
     const scanResult = await belongsRepo.scan({ partitionKey: { eq: { id: 'parent-1' } }, sortKey: { between: [1, 2] } });
     expect(scanResult.count).toBe(2);
+  });
+
+  it('accepts serialized partition input for belongsTo + AmplifyGsi index queries', async () => {
+    const amplifyRepo = new InMemoryRepository(AmplifyBelongsEntity);
+    amplifyRepo.mockedDb.flush();
+
+    await amplifyRepo.create({ id: 'item-1', createdAt: 1, parent: { id: 'parent-1' } } as AmplifyBelongsEntity);
+    await amplifyRepo.create({ id: 'item-2', createdAt: 2, parent: { id: 'parent-1' } } as AmplifyBelongsEntity);
+    await amplifyRepo.create({ id: 'item-3', createdAt: 3, parent: { id: 'parent-2' } } as AmplifyBelongsEntity);
+
+    // Using serialized string input (downstream pattern) should still work
+    const byString = await amplifyRepo.query('parent-1', { ge: 0 }, { index: 'ByParent' });
+    expect(byString.count).toBe(2);
+    expect(byString.map((i) => i.id).sort()).toEqual(['item-1', 'item-2']);
+
+    // Using object input also works
+    const byObject = await amplifyRepo.query({ id: 'parent-1' }, { ge: 0 }, { index: 'ByParent' });
+    expect(byObject.count).toBe(2);
   });
 
   it('supports delete for existing items and errors when missing', async () => {
